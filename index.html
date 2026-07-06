@@ -186,6 +186,17 @@
   .celebrate.doctor .cbody{background:linear-gradient(135deg,#fff8e8,#fef0d8);border:2px solid var(--gold)}
   .celebrate.doctor .cemoji{font-size:76px}
   .celebrate.doctor .cname{color:#a87d16;font-size:26px}
+  /* えらんで学習 */
+  .pick-h{font-size:13px;color:var(--ink-soft);margin:14px 0 8px;letter-spacing:.05em}
+  .pick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pick-btn{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);
+    border-radius:12px;padding:10px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 2px 0 rgba(42,39,35,.06)}
+  .pick-btn:active{transform:translateY(2px);box-shadow:none}
+  .pick-btn .pe{font-size:22px;flex-shrink:0}
+  .pick-btn .pn{font-weight:700;font-size:13px;display:block;color:var(--ink)}
+  .pick-btn .pp{font-size:10px;color:var(--ink-soft)}
+  .pick-btn.done{border-color:var(--green);background:#eef7f0}
+  .pick-btn.done .pp{color:var(--green);font-weight:700}
   /* ランキング */
   .field select{width:100%;padding:14px 16px;border:2px solid var(--line);border-radius:14px;
     font-size:16px;background:var(--card);font-family:inherit;color:var(--ink);appearance:none}
@@ -313,6 +324,16 @@
     <div id="impMsg" style="min-height:18px"></div>
     <button class="btn" id="doImport">この内容で問題を入れかえる</button>
     <button class="linkbtn" id="resetCards">さいしょのサンプル問題にもどす</button>
+  </section>
+
+  <!-- えらんで学習（地方・分野べつ） -->
+  <section id="pick" class="screen">
+    <div class="qtop"><button id="pickBack">✕</button><h2>🎯 えらんで学習</h2></div>
+    <p class="hint" style="margin:2px 0 4px">称号をねらって、地方や分野をえらんで学習しよう</p>
+    <h3 class="pick-h">🗾 ちほうで えらぶ</h3>
+    <div class="pick-grid" id="pickRegion"></div>
+    <h3 class="pick-h">🏅 ぶんやで えらぶ</h3>
+    <div class="pick-grid" id="pickCat"></div>
   </section>
 
   <!-- ランキング -->
@@ -907,6 +928,9 @@ function renderHome(){
   html+=`<button class="deck" data-comp="ALL"><span class="dot" style="background:linear-gradient(135deg,var(--green),var(--blue),var(--orange))"></span>
     <span><span class="dn">きょうのおすすめ</span><br><span class="dd">復習どきのカードをまぜて出題</span></span>
     <span class="due">スタート</span></button>`;
+  html+=`<button class="deck" data-comp="PICK"><span class="dot" style="background:var(--gold)"></span>
+    <span><span class="dn">🎯 えらんで学習</span><br><span class="dd">地方・分野ごとに出題（称号ねらい）</span></span>
+    <span class="due">えらぶ</span></button>`;
   const ng=nigateCards().length;
   if(ng>0){ // まちがえた問題ができたときだけ出現する
     html+=`<button class="deck" data-comp="NIGATE"><span class="dot" style="background:var(--wrong)"></span>
@@ -914,7 +938,10 @@ function renderHome(){
       <span class="due">${Math.min(ng,DAILY_GOAL)}枚</span></button>`;
   }
   $('deckPick').innerHTML=html;
-  $('deckPick').querySelectorAll('.deck').forEach(b=>b.onclick=()=>startQuiz(b.dataset.comp));
+  $('deckPick').querySelectorAll('.deck').forEach(b=>b.onclick=()=>{
+    if(b.dataset.comp==="PICK"){renderPick();show('pick');}
+    else startQuiz(b.dataset.comp);
+  });
   refreshBadges();
   $('badgeCountPill').textContent=earnedBadgeCount()+"/"+activeBadges().length;
   $('rankBtn').style.display=(ONLINE()&&state.online)?"":"none";
@@ -958,10 +985,33 @@ function renderBadges(){
 }
 $('badgesBtn').onclick=()=>{renderBadges();show('badges');};
 $('badgesBack').onclick=()=>{renderHome();show('home');};
+
+/* ===== えらんで学習（称号と同じ 地方×分野 の軸でデッキを選ぶ） ===== */
+function renderPick(){
+  const mk=(b,comp)=>{
+    const p=badgeProgress(b);
+    const done=p.total>0&&p.mastered>=p.total;
+    return `<button class="pick-btn ${done?'done':''}" data-comp="${comp}">
+      <span class="pe">${b.emoji}</span>
+      <span><span class="pn">${b.match}</span><span class="pp">${p.mastered}/${p.total}${done?'　パーフェクト！':''}</span></span>
+    </button>`;
+  };
+  $('pickRegion').innerHTML=BADGES.filter(b=>b.type==="region").map(b=>mk(b,"R:"+b.match)).join("");
+  $('pickCat').innerHTML=BADGES.filter(b=>b.type==="badgeCat"&&badgeActive(b)).map(b=>mk(b,"B:"+b.match)).join("");
+  document.querySelectorAll('#pick .pick-btn').forEach(el=>el.onclick=()=>startQuiz(el.dataset.comp));
+}
+$('pickBack').onclick=()=>{renderHome();show('home');};
+// デッキ指定: 編名 / "ALL" / "R:地方名" / "B:称号カテゴリ名"
+function cardInGroup(c,comp){
+  if(comp==="ALL")return true;
+  if(comp.startsWith("R:"))return c.region===comp.slice(2);
+  if(comp.startsWith("B:"))return c.badgeCat===comp.slice(2);
+  return c.comp===comp;
+}
 function dueCards(comp){
   const now=Date.now();
   return CARDS.filter(c=>{
-    if(comp!=="ALL"&&c.comp!==comp)return false;
+    if(!cardInGroup(c,comp))return false;
     const r=state.reviews[c.id];
     if(!r)return true;
     if(r.mastered&&r.due>now)return false;
@@ -983,7 +1033,7 @@ function startQuiz(comp){
     pool=nigateCards().slice(0,DAILY_GOAL);
   }else{
     pool=dueCards(comp);
-    if(pool.length===0)pool=CARDS.filter(c=>comp==="ALL"||c.comp===comp);
+    if(pool.length===0)pool=CARDS.filter(c=>cardInGroup(c,comp));
     pool=shuffle(pool).slice(0,DAILY_GOAL);
   }
   if(pool.length===0){renderHome();show('home');return;}
