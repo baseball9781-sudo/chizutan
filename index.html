@@ -198,6 +198,7 @@
   .pick-btn.done{border-color:var(--green);background:#eef7f0}
   .pick-btn.done .pp{color:var(--green);font-weight:700}
   /* ランキング */
+  .online-only{display:none} /* Supabase接続時のみ表示（初期化でonにする） */
   .field select{width:100%;padding:14px 16px;border:2px solid var(--line);border-radius:14px;
     font-size:16px;background:var(--card);font-family:inherit;color:var(--ink);appearance:none}
   .field select:focus{outline:none;border-color:var(--green)}
@@ -225,11 +226,11 @@
     <div><h1>ちずたん</h1><div class="brandsub">ちゅうがくじゅけん 社会・都道府県編</div></div>
     <div class="field"><label>ニックネーム</label>
       <input id="nick" maxlength="12" placeholder="れい：みかん" autocomplete="off">
-      <div class="hint">本名はつかわず、すきな名前にしてね</div></div>
+      <div class="hint">本名はつかわず、すきな名前にしてね。<span id="nickTeacherNote" class="online-only" style="color:var(--orange);font-weight:700">先生もこの名前を見るよ。ふざけた名前やわるいことばはやめてね</span></div></div>
     <div class="field"><label>番号（塾からもらった数字）</label>
       <input id="pin" inputmode="numeric" maxlength="8" placeholder="れい：308417" autocomplete="off">
       <div class="hint">先生からもらった数字だよ。ほかの人には教えないでね</div></div>
-    <div class="field" id="campusField"><label>校舎（はじめての人だけえらんでね）</label>
+    <div class="field online-only" id="campusField"><label>校舎（はじめての人だけえらんでね）</label>
       <select id="campusSel">
         <option value="">えらんでね</option>
         <option value="麻布">麻布</option>
@@ -872,6 +873,8 @@ $('loginBtn').onclick=async()=>{
           r=await rpc('register_player',{p_nick:n,p_number:p,p_campus:campus});
           if(!r.ok){$('loginMsg').textContent=REG_ERR[r.reason]||"登録できませんでした";return;}
           r.week_score=0;
+        }else if(!r.ok&&r.reason==='suspended'){
+          $('loginMsg').textContent="このアカウントは いま とまっているよ。先生にきいてね";return;
         }else if(!r.ok){
           $('loginMsg').textContent="番号がちがうみたい。もういちど確かめてね";return;
         }
@@ -1262,11 +1265,21 @@ $('pin').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/
    ・URL / anon key は Supabaseダッシュボード → Settings → API からコピー。
    ・anon key はクライアント露出前提の公開キー。サーバ側で RLS 全拒否＋RPCのみ許可にしてあるので、
      このキーで他人のデータを書き換えることはできない（supabase_setup.sql 参照）。
-   ・番号は平文でDBに保存されない（サーバ側でbcryptハッシュ化）。通信はHTTPS。 */
-const SUPABASE_URL = "";      // れい： "https://abcdefgh.supabase.co"
-const SUPABASE_ANON_KEY = ""; // れい： "eyJhbGciOi..."
+   ・番号：生徒のログイン認証はbcryptハッシュ照合。平文の番号は「発行済み番号表」にだけ残り、
+     講師（管理ページ／管理パスワード）からのみ参照できる（生徒・anon keyからは一切見えない）。
+     講師はニックネーム↔番号を照合し、塾のスプレッドシート（番号↔氏名）で誰かを特定する。
+   ・本名などの個人情報はアプリ／DBに保存しない。通信はHTTPS。 */
+const SUPABASE_URL = "https://ewvtwcidvqrhozlceypi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnR3Y2lkdnFyaG96bGNleXBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNDYxOTYsImV4cCI6MjA5ODgyMjE5Nn0.bqQWl5mOP659idb-Wwqiwm15ecNIHl2Kt4FBR01gUB4";
 
 function ONLINE(){return !!(SUPABASE_URL&&SUPABASE_ANON_KEY);}
+// ログイン画面のオンライン専用UI（校舎えらび・先生注意）の表示切り替え
+(function initLoginUI(){
+  const on=ONLINE();
+  document.querySelectorAll('.online-only').forEach(el=>{
+    el.style.display = on ? (el.tagName==='SPAN'?'inline':'block') : 'none';
+  });
+})();
 async function rpc(fn,args){
   const res=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+fn,{
     method:"POST",
