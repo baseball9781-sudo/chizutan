@@ -79,7 +79,7 @@
   <div class="tablewrap">
     <table>
       <thead><tr>
-        <th>ニックネーム</th><th>校舎</th><th>番号</th><th>今週</th><th>状態</th><th>そうさ</th>
+        <th>ニックネーム</th><th>校舎</th><th>番号</th><th>今週(点)</th><th>状態</th><th>そうさ</th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
@@ -147,7 +147,7 @@ function render(list){
       <td class="nick">${esc(p.nick)}</td>
       <td><span class="tag">${esc(p.campus)}</span></td>
       <td class="bango">${esc(p.bango)}</td>
-      <td>${p.week_score}問</td>
+      <td>${p.week_score}点</td>
       <td>${stop?'<span class="tag stop">停止中</span>':'<span class="tag ok">通常</span>'}</td>
       <td><div class="actions">
         <button class="btn sec sm act-rename">名前変更</button>
