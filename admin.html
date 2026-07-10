@@ -66,13 +66,13 @@
     <div class="f">
       <label>校舎でしぼる</label>
       <select id="campusFilter">
-        <option value="">すべて</option>
+        <option value="">全て</option>
         <option value="麻布">麻布</option><option value="渋谷">渋谷</option>
         <option value="四谷">四谷</option><option value="新宿">新宿</option>
         <option value="自由が丘">自由が丘</option>
       </select>
     </div>
-    <button class="btn sec" id="reloadBtn">🔄 さいしんにする</button>
+    <button class="btn sec" id="reloadBtn">🔄 最新にする</button>
     <button class="btn sec" id="logoutBtn">ログアウト</button>
   </div>
   <div class="msg" id="adminMsg"></div>
@@ -85,9 +85,9 @@
     </table>
   </div>
   <div class="foot">
-    ・「番号」を塾のスプレッドシート（番号↔氏名）と照らし合わせて、だれのアカウントか確認できます。<br>
+    ・「番号」を塾のスプレッドシート（番号↔氏名）と照らし合わせて、誰のアカウントか確認できます。<br>
     ・ニックネームがふさわしくないときは「名前変更」で直せます。<br>
-    ・「停止」するとその生徒はログイン・スコア送信ができなくなります（「再開」でもどせます）。
+    ・「停止」するとその生徒はログイン・スコア送信ができなくなります（「再開」で戻せます）。
   </div>
 </div>
 
@@ -116,28 +116,28 @@ if(!SUPABASE_URL||!SUPABASE_ANON_KEY){
 
 $('loginBtn').onclick=async()=>{
   const pw=$('pw').value;
-  $('loginMsg').className="msg"; $('loginMsg').textContent="かくにん中…";
+  $('loginMsg').className="msg"; $('loginMsg').textContent="確認中…";
   if(!SUPABASE_URL||!SUPABASE_ANON_KEY){$('loginMsg').className="msg err";$('loginMsg').textContent="設定が未完了です";return;}
   try{
     const r=await rpc('admin_auth',{p_pw:pw});
-    if(!r.ok){$('loginMsg').className="msg err";$('loginMsg').textContent="パスワードがちがいます";return;}
+    if(!r.ok){$('loginMsg').className="msg err";$('loginMsg').textContent="パスワードが違います";return;}
     ADMIN_PW=pw;
     $('loginCard').classList.add('hide'); $('adminCard').classList.remove('hide');
     load();
-  }catch(e){$('loginMsg').className="msg err";$('loginMsg').textContent="つうしんエラー："+e.message;}
+  }catch(e){$('loginMsg').className="msg err";$('loginMsg').textContent="通信エラー："+e.message;}
 };
 $('logoutBtn').onclick=()=>{ADMIN_PW="";$('pw').value="";$('adminCard').classList.add('hide');$('loginCard').classList.remove('hide');$('loginMsg').textContent="";};
 $('reloadBtn').onclick=()=>load();
 $('campusFilter').onchange=()=>load();
 
 async function load(){
-  $('adminMsg').className="msg"; $('adminMsg').textContent="よみこみ中…";
+  $('adminMsg').className="msg"; $('adminMsg').textContent="読み込み中…";
   try{
     const r=await rpc('admin_list',{p_pw:ADMIN_PW,p_campus:$('campusFilter').value||null});
     if(!r.ok){$('adminMsg').className="msg err";$('adminMsg').textContent="読み込めませんでした（再ログインしてください）";return;}
     render(r.players||[]);
     $('adminMsg').textContent = r.players.length ? (r.players.length+"人") : "まだ登録がありません";
-  }catch(e){$('adminMsg').className="msg err";$('adminMsg').textContent="つうしんエラー："+e.message;}
+  }catch(e){$('adminMsg').className="msg err";$('adminMsg').textContent="通信エラー："+e.message;}
 }
 
 function render(list){
@@ -148,7 +148,7 @@ function render(list){
       <td><span class="tag">${esc(p.campus)}</span></td>
       <td class="bango">${esc(p.bango)}</td>
       <td>${p.week_score}問</td>
-      <td>${stop?'<span class="tag stop">停止中</span>':'<span class="tag ok">ふつう</span>'}</td>
+      <td>${stop?'<span class="tag stop">停止中</span>':'<span class="tag ok">通常</span>'}</td>
       <td><div class="actions">
         <button class="btn sec sm act-rename">名前変更</button>
         <button class="btn sm ${stop?'sec':'warn'} act-toggle">${stop?'再開':'停止'}</button>
@@ -169,9 +169,9 @@ async function doRename(id,cur){
   if(!nv){alert("空にはできません");return;}
   try{
     const r=await rpc('admin_rename',{p_pw:ADMIN_PW,p_player:id,p_new_nick:nv});
-    if(!r.ok){alert(r.reason==='nick_taken'?"その名前はすでに使われています":r.reason==='bad_nick'?"1〜12文字で入れてください":"変更できませんでした");return;}
+    if(!r.ok){alert(r.reason==='nick_taken'?"その名前は既に使われています":r.reason==='bad_nick'?"1〜12文字で入れてください":"変更できませんでした");return;}
     load();
-  }catch(e){alert("つうしんエラー："+e.message);}
+  }catch(e){alert("通信エラー："+e.message);}
 }
 async function doToggle(id,nick,isStopped){
   const willStop=!isStopped;
@@ -180,7 +180,7 @@ async function doToggle(id,nick,isStopped){
     const r=await rpc('admin_set_suspended',{p_pw:ADMIN_PW,p_player:id,p_val:willStop});
     if(!r.ok){alert("変更できませんでした");return;}
     load();
-  }catch(e){alert("つうしんエラー："+e.message);}
+  }catch(e){alert("通信エラー："+e.message);}
 }
 $('pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click();});
 </script>

@@ -2,7 +2,7 @@
   ちずたん v3 — 中学受験 社会・地理 暗記アプリ
   ・3段階出題：1回目=4択 → 2回目=文字を選ぶ → 3回目以降=漢字で入力（SRS習熟度で自動的に上がる）
   ・ニックネーム+番号（塾発行）でログイン。進捗は端末内(localStorage)＋オンライン時はSupabaseにバックアップ。
-  ・週間ランキングバトル（Supabase接続時のみ）。書き込みはすべてRPC経由・番号はサーバ側でbcryptハッシュ化。
+  ・週間ランキングバトル（Supabase接続時のみ）。書き込みは全てRPC経由・番号はサーバ側でbcryptハッシュ化。
   ・問題はCSV取り込みで差し替え可能（スプレッドシートで量産→読み込み）
   Supabase設定：<script>内の SUPABASE_URL / SUPABASE_ANON_KEY を埋める（空なら従来どおり端末内のみで動く）。
 -->
@@ -186,7 +186,7 @@
   .celebrate.doctor .cbody{background:linear-gradient(135deg,#fff8e8,#fef0d8);border:2px solid var(--gold)}
   .celebrate.doctor .cemoji{font-size:76px}
   .celebrate.doctor .cname{color:#a87d16;font-size:26px}
-  /* えらんで学習 */
+  /* 選んで学習 */
   .pick-h{font-size:13px;color:var(--ink-soft);margin:14px 0 8px;letter-spacing:.05em}
   .pick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .pick-btn{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);
@@ -232,20 +232,20 @@
     <div><h1>ちずたん</h1><div class="brandsub">ちゅうがくじゅけん 社会・都道府県編</div></div>
     <div class="field"><label>ニックネーム</label>
       <input id="nick" maxlength="12" placeholder="れい：みかん" autocomplete="off">
-      <div class="hint">本名はつかわず、すきな名前にしてね。<span id="nickTeacherNote" class="online-only" style="color:var(--orange);font-weight:700">先生もこの名前を見るよ。ふざけた名前やわるいことばはやめてね</span></div></div>
+      <div class="hint">本名は使わず、好きな名前にしてね。<span id="nickTeacherNote" class="online-only" style="color:var(--orange);font-weight:700">先生もこの名前を見るよ。ふざけた名前や悪い言葉はやめてね</span></div></div>
     <div class="field"><label>番号（塾からもらった数字）</label>
       <input id="pin" inputmode="numeric" maxlength="8" placeholder="れい：308417" autocomplete="off">
-      <div class="hint">先生からもらった数字だよ。ほかの人には教えないでね</div></div>
-    <div class="field online-only" id="campusField"><label>校舎（はじめての人だけえらんでね）</label>
+      <div class="hint">先生からもらった数字だよ。他の人には教えないでね</div></div>
+    <div class="field online-only" id="campusField"><label>校舎（初めての人だけ選んでね）</label>
       <select id="campusSel">
-        <option value="">えらんでね</option>
+        <option value="">選んでね</option>
         <option value="麻布">麻布</option>
         <option value="渋谷">渋谷</option>
         <option value="四谷">四谷</option>
         <option value="新宿">新宿</option>
         <option value="自由が丘">自由が丘</option>
       </select></div>
-    <button class="btn" id="loginBtn">はじめる / つづきから</button>
+    <button class="btn" id="loginBtn">始める / 続きから</button>
     <div class="hint" id="loginMsg" style="min-height:16px;color:var(--orange)"></div>
   </section>
 
@@ -253,21 +253,21 @@
   <section id="home" class="screen">
     <div class="topbar">
       <div class="greet">こんにちは<br><b id="hiNick">みかん</b> さん</div>
-      <div class="streak"><span class="fire">🔥</span><span id="streakN">0</span>日れんぞく</div>
+      <div class="streak"><span class="fire">🔥</span><span id="streakN">0</span>日連続</div>
     </div>
     <div class="map-wrap">
-      <h2>にっぽん せいは マップ</h2>
-      <div class="sub">マスターした県が緑にそまっていくよ（47マス）</div>
+      <h2>日本 制覇 マップ</h2>
+      <div class="sub">マスターした県が緑に染まっていくよ（47マス）</div>
       <div id="mapHost"></div>
       <div class="mapnote"><span id="masterN">0</span> / 47 県をマスター</div>
     </div>
     <div class="stat-row">
-      <div class="stat"><div class="num" id="sCards">0</div><div class="lbl">おぼえたカード</div></div>
+      <div class="stat"><div class="num" id="sCards">0</div><div class="lbl">覚えたカード</div></div>
       <div class="stat"><div class="num" id="sXp">0</div><div class="lbl">XP</div></div>
-      <div class="stat"><div class="num" id="sAcc">–</div><div class="lbl">せいかい率</div></div>
+      <div class="stat"><div class="num" id="sAcc">–</div><div class="lbl">正解率</div></div>
     </div>
     <div class="goal">
-      <div class="gt"><span>きょうのゴール</span><span><b id="goalNow">0</b> / <span id="goalMax">10</span> 問</span></div>
+      <div class="gt"><span>今日の目標</span><span><b id="goalNow">0</b> / <span id="goalMax">10</span> 問</span></div>
       <div class="bar"><i id="goalBar"></i></div>
     </div>
     <div class="deck-pick" id="deckPick"></div>
@@ -288,14 +288,14 @@
       <div class="qbar"><i id="qProg"></i></div>
       <div class="qcount" id="qCount">1/10</div>
     </div>
-    <div class="stage-pill" id="stagePill">ステップ1・4たくからえらぶ</div>
+    <div class="stage-pill" id="stagePill">ステップ1・4択から選ぶ</div>
     <div class="qcard">
       <span class="qtag" id="qTag">県別編</span>
       <div class="qpref" id="qPref">香川県</div>
       <img id="qImg" class="qimg" style="display:none" alt="">
-      <div class="qimg-miss" id="qImgMiss" style="display:none">🖼️ 画像がひらけないよ（先生におしらせしてね）</div>
+      <div class="qimg-miss" id="qImgMiss" style="display:none">🖼️ 画像が開けないよ（先生にお知らせしてね）</div>
       <div class="qtext" id="qText">問題文</div>
-      <div class="qmulti-hint" id="qMultiHint" style="display:none">▶ あてはまるものを ぜんぶ えらんでね</div>
+      <div class="qmulti-hint" id="qMultiHint" style="display:none">▶ あてはまるものを 全部 選んでね</div>
     </div>
     <div id="answerArea"></div>
     <div class="feedback" id="feedback">
@@ -303,59 +303,59 @@
       <div class="fn" id="fNote"></div>
     </div>
     <div class="qfoot">
-      <button class="btn" id="checkBtn" disabled>こたえあわせ</button>
-      <button class="linkbtn" id="dontknow">わからない（答えを見る）</button>
+      <button class="btn" id="checkBtn" disabled>答え合わせ</button>
+      <button class="linkbtn" id="dontknow">分からない（答えを見る）</button>
     </div>
   </section>
 
   <!-- 完了 -->
   <section id="done" class="screen">
     <div class="big">🎉</div>
-    <h2>きょうのぶん クリア！</h2>
+    <h2>今日の分 クリア！</h2>
     <div class="reward">
-      <div>といた問題<b id="dCards">10</b></div>
-      <div>せいかい<b id="dCorrect">8</b></div>
+      <div>解いた問題<b id="dCards">10</b></div>
+      <div>正解<b id="dCorrect">8</b></div>
       <div>ゲットXP<b class="xp-pop" id="dXp">+80</b></div>
     </div>
-    <div class="greet" style="text-align:center" id="dStreakMsg">🔥 れんぞく記録がのびたよ！</div>
-    <button class="btn" id="backHome">ホームへもどる</button>
-    <button class="btn secondary" id="againBtn">もうひとセットやる</button>
+    <div class="greet" style="text-align:center" id="dStreakMsg">🔥 連続記録がのびたよ！</div>
+    <button class="btn" id="backHome">ホームへ戻る</button>
+    <button class="btn secondary" id="againBtn">もう一セットやる</button>
   </section>
 
   <!-- 取り込み -->
   <section id="import" class="screen">
     <div class="qtop"><button id="impBack">✕</button><h2>問題を取り込む</h2></div>
     <p class="hint">スプレッドシートで作った問題を取り込めます。CSVファイルを選ぶか、中身を貼り付けてください。1行目は見出し（id,編,都道府県,…）のままでOK。</p>
-    <label class="dz" for="csvFile">📄 CSVファイルをえらぶ
+    <label class="dz" for="csvFile">📄 CSVファイルを選ぶ
       <input id="csvFile" type="file" accept=".csv,text/csv" style="display:none"></label>
     <p class="hint" style="text-align:center">または下に貼り付け</p>
     <textarea id="csvText" placeholder="id,編,都道府県,カテゴリ,出題タイプ,問題文,正解,選択肢,覚え方メモ,タグ&#10;..."></textarea>
     <div id="impMsg" style="min-height:18px"></div>
-    <button class="btn" id="doImport">この内容で問題を入れかえる</button>
-    <button class="linkbtn" id="resetCards">さいしょのサンプル問題にもどす</button>
+    <button class="btn" id="doImport">この内容で問題を入れ替える</button>
+    <button class="linkbtn" id="resetCards">最初のサンプル問題に戻す</button>
   </section>
 
-  <!-- えらんで学習（地方・分野べつ） -->
+  <!-- 選んで学習（地方・分野べつ） -->
   <section id="pick" class="screen">
-    <div class="qtop"><button id="pickBack">✕</button><h2>🎯 えらんで学習</h2></div>
-    <p class="hint" style="margin:2px 0 4px">称号をねらって、地方や分野をえらんで学習しよう</p>
-    <h3 class="pick-h">🗾 ちほうで えらぶ</h3>
+    <div class="qtop"><button id="pickBack">✕</button><h2>🎯 選んで学習</h2></div>
+    <p class="hint" style="margin:2px 0 4px">称号を狙って、地方や分野を選んで学習しよう</p>
+    <h3 class="pick-h">🗾 地方で選ぶ</h3>
     <div class="pick-grid" id="pickRegion"></div>
-    <h3 class="pick-h">🏅 ぶんやで えらぶ</h3>
+    <h3 class="pick-h">🏅 分野で選ぶ</h3>
     <div class="pick-grid" id="pickCat"></div>
   </section>
 
   <!-- ランキング -->
   <section id="ranking" class="screen">
     <div class="qtop"><button id="rankBack">✕</button><h2>🏆 ランキング</h2></div>
-    <div class="rank-note" id="rankNote">今週の せいかい数 で しょうぶ！<span id="rankReset"></span></div>
-    <div class="rank-me"><span>きみの今週のせいかい</span><span><b id="myWeekScore">0</b> 問</span></div>
+    <div class="rank-note" id="rankNote">今週の 正解数 で 勝負！<span id="rankReset"></span></div>
+    <div class="rank-me"><span>君の今週の正解数</span><span><b id="myWeekScore">0</b> 問</span></div>
     <div class="rank-tabs" id="rankPeriodTabs">
       <button class="rtab active" data-period="week">今週</button>
       <button class="rtab" data-period="month">今月</button>
     </div>
     <div class="rank-tabs" id="rankTabs">
-      <button class="rtab active" data-campus="">ぜんいん</button>
+      <button class="rtab active" data-campus="">全員</button>
       <button class="rtab" data-campus="麻布">麻布</button>
       <button class="rtab" data-campus="渋谷">渋谷</button>
       <button class="rtab" data-campus="四谷">四谷</button>
@@ -364,7 +364,7 @@
     </div>
     <div id="rankList"></div>
     <div class="rank-legend"><span class="star gold">★</span> 月間チャンピオン　<span class="star silver">★</span> 週間チャンピオン</div>
-    <button class="btn secondary" id="rankReload">🔄 さいしんにする</button>
+    <button class="btn secondary" id="rankReload">🔄 最新にする</button>
   </section>
 
   <!-- 称号 -->
@@ -402,9 +402,9 @@ const DEFAULT_CARDS = [
   {"id": "ehime-capital", "comp": "県別編", "pref": "愛媛県", "cat": "県庁所在地", "type": "single", "q": "愛媛県の県庁所在地は？", "a": ["松山市"], "choices": ["今治市", "新居浜市", "高松市", "松山市"], "note": "『坊っちゃん』の舞台。道後温泉。県名と異なる。", "region": "中国四国", "badgeCat": "県庁所在地"},
   {"id": "okinawa-capital", "comp": "県別編", "pref": "沖縄県", "cat": "県庁所在地", "type": "single", "q": "沖縄県の県庁所在地は？", "a": ["那覇市"], "choices": ["名護市", "沖縄市", "石垣市", "那覇市"], "note": "漢字に注意。首里城跡。県名と異なる。", "region": "九州沖縄", "badgeCat": "県庁所在地"},
   {"id": "seirei-kanto", "comp": "県別編", "pref": "関東", "cat": "政令指定都市", "type": "single", "q": "関東地方(東京23区を除く)で一番人口が多い都市は？", "a": ["横浜市"], "choices": ["川崎市", "さいたま市", "千葉市", "横浜市"], "note": "神奈川県には政令指定都市が3つ(横浜・川崎・相模原)。", "region": "関東", "badgeCat": "県庁所在地"},
-  {"id": "kanagawa-3seirei", "comp": "県別編", "pref": "神奈川県", "cat": "政令指定都市", "type": "multi", "q": "神奈川県にある政令指定都市を ぜんぶ えらんでね", "a": ["横浜市", "川崎市", "相模原市"], "choices": ["横浜市", "川崎市", "相模原市", "藤沢市"], "note": "全国で唯一、政令指定都市が3つある県。", "region": "関東", "badgeCat": "県庁所在地"},
-  {"id": "nihonsankei", "comp": "県別編", "pref": "全国", "cat": "日本三景", "type": "multi", "q": "日本三景を ぜんぶ えらんでね", "a": ["松島", "天橋立", "宮島"], "choices": ["松島", "天橋立", "宮島", "後楽園"], "note": "松島(宮城)・天橋立(京都)・宮島(広島)。後楽園は日本三名園。", "region": "全国", "badgeCat": "その他"},
-  {"id": "sanmeien", "comp": "県別編", "pref": "全国", "cat": "日本三名園", "type": "multi", "q": "日本三名園を ぜんぶ えらんでね", "a": ["兼六園", "偕楽園", "後楽園"], "choices": ["兼六園", "偕楽園", "後楽園", "松島"], "note": "兼六園(石川)・偕楽園(茨城)・後楽園(岡山)。", "region": "全国", "badgeCat": "その他"},
+  {"id": "kanagawa-3seirei", "comp": "県別編", "pref": "神奈川県", "cat": "政令指定都市", "type": "multi", "q": "神奈川県にある政令指定都市を 全部 選んでね", "a": ["横浜市", "川崎市", "相模原市"], "choices": ["横浜市", "川崎市", "相模原市", "藤沢市"], "note": "全国で唯一、政令指定都市が3つある県。", "region": "関東", "badgeCat": "県庁所在地"},
+  {"id": "nihonsankei", "comp": "県別編", "pref": "全国", "cat": "日本三景", "type": "multi", "q": "日本三景を 全部 選んでね", "a": ["松島", "天橋立", "宮島"], "choices": ["松島", "天橋立", "宮島", "後楽園"], "note": "松島(宮城)・天橋立(京都)・宮島(広島)。後楽園は日本三名園。", "region": "全国", "badgeCat": "その他"},
+  {"id": "sanmeien", "comp": "県別編", "pref": "全国", "cat": "日本三名園", "type": "multi", "q": "日本三名園を 全部 選んでね", "a": ["兼六園", "偕楽園", "後楽園"], "choices": ["兼六園", "偕楽園", "後楽園", "松島"], "note": "兼六園(石川)・偕楽園(茨城)・後楽園(岡山)。", "region": "全国", "badgeCat": "その他"},
   {"id": "river-shinano", "comp": "自然編", "pref": "新潟県", "cat": "河川", "type": "single", "q": "日本で一番 長い 川は？", "a": ["信濃川"], "choices": ["利根川", "石狩川", "最上川", "信濃川"], "note": "長野→新潟。下流の越後平野は米どころ。", "region": "中部", "badgeCat": "陸"},
   {"id": "river-tone", "comp": "自然編", "pref": "千葉県", "cat": "河川", "type": "single", "q": "流域面積が日本一 の川は？", "a": ["利根川"], "choices": ["信濃川", "石狩川", "筑後川", "利根川"], "note": "長さは2番目、流域面積は1番。「坂東太郎」。", "region": "関東", "badgeCat": "陸"},
   {"id": "river-ishikari", "comp": "自然編", "pref": "北海道", "cat": "河川", "type": "single", "q": "日本で3番目に長く、三日月湖が多い川は？", "a": ["石狩川"], "choices": ["信濃川", "利根川", "北上川", "石狩川"], "note": "石狩平野を流れる。曲がりくねった川。", "region": "北海道", "badgeCat": "陸"},
@@ -417,7 +417,7 @@ const DEFAULT_CARDS = [
   {"id": "river-yoshino", "comp": "自然編", "pref": "徳島県", "cat": "河川", "type": "single", "q": "「四国三郎」と呼ばれ、香川用水の水源になる川は？", "a": ["吉野川"], "choices": ["筑後川", "利根川", "四万十川", "吉野川"], "note": "四国を流れる。", "region": "中国四国", "badgeCat": "陸"},
   {"id": "river-chikugo", "comp": "自然編", "pref": "福岡県", "cat": "河川", "type": "single", "q": "「筑紫次郎」と呼ばれ、クリークで有名な川は？", "a": ["筑後川"], "choices": ["吉野川", "利根川", "信濃川", "筑後川"], "note": "筑紫平野。有明海に注ぐ。", "region": "九州沖縄", "badgeCat": "陸"},
   {"id": "river-shimanto", "comp": "自然編", "pref": "高知県", "cat": "河川", "type": "single", "q": "「最後の清流」と呼ばれる高知県の川は？", "a": ["四万十川"], "choices": ["吉野川", "球磨川", "仁淀川", "四万十川"], "note": "きれいな川。", "region": "中国四国", "badgeCat": "陸"},
-  {"id": "river-3kyuryu", "comp": "自然編", "pref": "全国", "cat": "河川", "type": "multi", "q": "日本三大急流を ぜんぶ えらんでね", "a": ["最上川", "富士川", "球磨川"], "choices": ["最上川", "富士川", "球磨川", "信濃川"], "note": "最上川(山形)・富士川(山梨静岡)・球磨川(熊本)。", "region": "全国", "badgeCat": "陸"},
+  {"id": "river-3kyuryu", "comp": "自然編", "pref": "全国", "cat": "河川", "type": "multi", "q": "日本三大急流を 全部 選んでね", "a": ["最上川", "富士川", "球磨川"], "choices": ["最上川", "富士川", "球磨川", "信濃川"], "note": "最上川(山形)・富士川(山梨静岡)・球磨川(熊本)。", "region": "全国", "badgeCat": "陸"},
   {"id": "lake-biwa", "comp": "自然編", "pref": "滋賀県", "cat": "湖", "type": "single", "q": "日本で一番 大きい 湖は？", "a": ["琵琶湖"], "choices": ["霞ヶ浦", "サロマ湖", "猪苗代湖", "琵琶湖"], "note": "滋賀県の面積の6分の1。ラムサール条約。", "region": "近畿", "badgeCat": "陸"},
   {"id": "lake-kasumi", "comp": "自然編", "pref": "茨城県", "cat": "湖", "type": "single", "q": "日本で2番目に大きい湖は？", "a": ["霞ヶ浦"], "choices": ["琵琶湖", "サロマ湖", "宍道湖", "霞ヶ浦"], "note": "水郷地帯。", "region": "関東", "badgeCat": "陸"},
   {"id": "lake-saroma", "comp": "自然編", "pref": "北海道", "cat": "湖", "type": "single", "q": "日本で3番目に大きく、ほたて養殖がさかんな湖は？", "a": ["サロマ湖"], "choices": ["琵琶湖", "霞ヶ浦", "田沢湖", "サロマ湖"], "note": "北海道。", "region": "北海道", "badgeCat": "陸"},
@@ -494,10 +494,10 @@ const DEFAULT_CARDS = [
   {"id": "farm-beet", "comp": "産業編", "pref": "北海道", "cat": "特産品", "type": "single", "q": "てんさい(ビート)の生産量が全国一の都道府県は？", "a": ["北海道"], "choices": ["青森県", "岩手県", "長野県", "北海道"], "note": "砂糖の原料。", "region": "北海道", "badgeCat": "農業"},
   {"id": "farm-konnyaku", "comp": "産業編", "pref": "群馬県", "cat": "特産品", "type": "single", "q": "こんにゃくいもの生産量が全国一の都道府県は？", "a": ["群馬県"], "choices": ["栃木県", "茨城県", "福島県", "群馬県"], "note": "", "region": "関東", "badgeCat": "農業"},
   {"id": "farm-kanpyo", "comp": "産業編", "pref": "栃木県", "cat": "特産品", "type": "single", "q": "かんぴょうの生産量が全国一の都道府県は？", "a": ["栃木県"], "choices": ["群馬県", "茨城県", "埼玉県", "栃木県"], "note": "ゆうがおの実から作る。", "region": "関東", "badgeCat": "農業"},
-  {"id": "prod-hokkaido", "comp": "産業編", "pref": "北海道", "cat": "特産品", "type": "multi", "q": "北海道が生産量 全国一 の農産物を ぜんぶ えらんでね", "a": ["たまねぎ", "じゃがいも", "てんさい", "小麦"], "choices": ["たまねぎ", "じゃがいも", "てんさい", "小麦", "みかん"], "note": "「カレーの具材は北海道」。みかんは和歌山。", "region": "北海道", "badgeCat": "農業"},
-  {"id": "prod-yamagata", "comp": "産業編", "pref": "山形県", "cat": "特産品", "type": "multi", "q": "山形県が生産量 全国一 の果物を ぜんぶ えらんでね", "a": ["さくらんぼ", "西洋なし"], "choices": ["さくらんぼ", "西洋なし", "みかん", "りんご"], "note": "おうとう(さくらんぼ)とラ・フランス。", "region": "東北", "badgeCat": "農業"},
-  {"id": "prod-wakayama", "comp": "産業編", "pref": "和歌山県", "cat": "特産品", "type": "multi", "q": "和歌山県が生産量 全国一 の果物を ぜんぶ えらんでね", "a": ["みかん", "うめ", "かき"], "choices": ["みかん", "うめ", "かき", "さくらんぼ"], "note": "「お年寄りに好かれる和歌山県」。", "region": "近畿", "badgeCat": "農業"},
-  {"id": "prod-okinawa", "comp": "産業編", "pref": "沖縄県", "cat": "特産品", "type": "multi", "q": "沖縄県が生産量 全国一 の作物を ぜんぶ えらんでね", "a": ["さとうきび", "パイナップル"], "choices": ["さとうきび", "パイナップル", "てんさい", "りんご"], "note": "あたたかい気候。てんさいは北海道。", "region": "九州沖縄", "badgeCat": "農業"},
+  {"id": "prod-hokkaido", "comp": "産業編", "pref": "北海道", "cat": "特産品", "type": "multi", "q": "北海道が生産量 全国一 の農産物を 全部 選んでね", "a": ["たまねぎ", "じゃがいも", "てんさい", "小麦"], "choices": ["たまねぎ", "じゃがいも", "てんさい", "小麦", "みかん"], "note": "「カレーの具材は北海道」。みかんは和歌山。", "region": "北海道", "badgeCat": "農業"},
+  {"id": "prod-yamagata", "comp": "産業編", "pref": "山形県", "cat": "特産品", "type": "multi", "q": "山形県が生産量 全国一 の果物を 全部 選んでね", "a": ["さくらんぼ", "西洋なし"], "choices": ["さくらんぼ", "西洋なし", "みかん", "りんご"], "note": "おうとう(さくらんぼ)とラ・フランス。", "region": "東北", "badgeCat": "農業"},
+  {"id": "prod-wakayama", "comp": "産業編", "pref": "和歌山県", "cat": "特産品", "type": "multi", "q": "和歌山県が生産量 全国一 の果物を 全部 選んでね", "a": ["みかん", "うめ", "かき"], "choices": ["みかん", "うめ", "かき", "さくらんぼ"], "note": "「お年寄りに好かれる和歌山県」。", "region": "近畿", "badgeCat": "農業"},
+  {"id": "prod-okinawa", "comp": "産業編", "pref": "沖縄県", "cat": "特産品", "type": "multi", "q": "沖縄県が生産量 全国一 の作物を 全部 選んでね", "a": ["さとうきび", "パイナップル"], "choices": ["さとうきび", "パイナップル", "てんさい", "りんご"], "note": "あたたかい気候。てんさいは北海道。", "region": "九州沖縄", "badgeCat": "農業"},
   {"id": "live-beef", "comp": "産業編", "pref": "北海道", "cat": "畜産", "type": "single", "q": "肉用牛の飼育頭数が全国一の都道府県は？", "a": ["北海道"], "choices": ["鹿児島県", "宮崎県", "岩手県", "北海道"], "note": "2位鹿児島。「牛は北海道」。", "region": "北海道", "badgeCat": "農業"},
   {"id": "live-milk", "comp": "産業編", "pref": "北海道", "cat": "畜産", "type": "single", "q": "乳用牛の飼育頭数が全国一の都道府県は？", "a": ["北海道"], "choices": ["栃木県", "岩手県", "群馬県", "北海道"], "note": "2位栃木。", "region": "北海道", "badgeCat": "農業"},
   {"id": "live-pig", "comp": "産業編", "pref": "鹿児島県", "cat": "畜産", "type": "single", "q": "豚の飼育頭数が全国一の都道府県は？", "a": ["鹿児島県"], "choices": ["北海道", "宮崎県", "千葉県", "鹿児島県"], "note": "2位北海道。「肉は鹿児島」。", "region": "九州沖縄", "badgeCat": "農業"},
@@ -543,8 +543,8 @@ const DEFAULT_CARDS = [
   {"id": "aqua-nori", "comp": "産業編", "pref": "佐賀県", "cat": "養殖", "type": "single", "q": "のりの養殖量が全国一で、有明海でさかんな県は？", "a": ["佐賀県"], "choices": ["兵庫県", "福岡県", "宮城県", "佐賀県"], "note": "", "region": "九州沖縄", "badgeCat": "漁業"},
   {"id": "aqua-pearl", "comp": "産業編", "pref": "三重県", "cat": "養殖", "type": "single", "q": "英虞湾で真珠の養殖がさかんな県は？", "a": ["三重県"], "choices": ["長崎県", "愛媛県", "広島県", "三重県"], "note": "アコヤ貝。あたたかい地方。", "region": "近畿", "badgeCat": "漁業"},
   {"id": "aqua-scallop", "comp": "産業編", "pref": "北海道", "cat": "養殖", "type": "single", "q": "サロマ湖でほたての養殖がさかんな道は？", "a": ["北海道"], "choices": ["青森県", "宮城県", "岩手県", "北海道"], "note": "寒い地方。", "region": "北海道", "badgeCat": "漁業"},
-  {"id": "forest-natural", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "multi", "q": "天然の三大美林を ぜんぶ えらんでね", "a": ["青森ひば", "秋田すぎ", "木曽ひのき"], "choices": ["青森ひば", "秋田すぎ", "木曽ひのき", "吉野すぎ"], "note": "吉野すぎは人工の三大美林。", "region": "全国", "badgeCat": "林業"},
-  {"id": "forest-manmade", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "multi", "q": "人工の三大美林を ぜんぶ えらんでね", "a": ["吉野すぎ", "天竜すぎ", "尾鷲ひのき"], "choices": ["吉野すぎ", "天竜すぎ", "尾鷲ひのき", "秋田すぎ"], "note": "吉野(奈良)・天竜(静岡)・尾鷲(三重)。", "region": "全国", "badgeCat": "林業"},
+  {"id": "forest-natural", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "multi", "q": "天然の三大美林を 全部 選んでね", "a": ["青森ひば", "秋田すぎ", "木曽ひのき"], "choices": ["青森ひば", "秋田すぎ", "木曽ひのき", "吉野すぎ"], "note": "吉野すぎは人工の三大美林。", "region": "全国", "badgeCat": "林業"},
+  {"id": "forest-manmade", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "multi", "q": "人工の三大美林を 全部 選んでね", "a": ["吉野すぎ", "天竜すぎ", "尾鷲ひのき"], "choices": ["吉野すぎ", "天竜すぎ", "尾鷲ひのき", "秋田すぎ"], "note": "吉野(奈良)・天竜(静岡)・尾鷲(三重)。", "region": "全国", "badgeCat": "林業"},
   {"id": "kogai-minamata", "comp": "産業編", "pref": "熊本県", "cat": "公害", "type": "single", "q": "熊本県で発生し、原因がメチル水銀の公害病は？", "a": ["水俣病"], "choices": ["イタイイタイ病", "四日市ぜんそく", "新潟水俣病", "水俣病"], "note": "四大公害病。", "region": "九州沖縄", "badgeCat": "工業"},
   {"id": "kogai-niigata", "comp": "産業編", "pref": "新潟県", "cat": "公害", "type": "single", "q": "阿賀野川流域で発生した、メチル水銀が原因の公害病は？", "a": ["新潟水俣病"], "choices": ["水俣病", "イタイイタイ病", "四日市ぜんそく", "新潟水俣病"], "note": "第二水俣病。", "region": "中部", "badgeCat": "工業"},
   {"id": "kogai-itai", "comp": "産業編", "pref": "富山県", "cat": "公害", "type": "single", "q": "神通川流域で発生し、カドミウムが原因の公害病は？", "a": ["イタイイタイ病"], "choices": ["水俣病", "四日市ぜんそく", "新潟水俣病", "イタイイタイ病"], "note": "四大公害病。", "region": "中部", "badgeCat": "工業"},
@@ -558,7 +558,7 @@ const DEFAULT_CARDS = [
   {"id": "forest-jikyu", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "single", "q": "日本の木材の自給率はおよそどれくらい？", "a": ["約30%"], "choices": ["約60%", "約90%", "約10%", "約30%"], "note": "アメリカ・カナダからの輸入が多い。", "region": "全国", "badgeCat": "林業"},
   {"id": "forest-shinrin", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "single", "q": "日本の国土のうち森林がしめる割合はおよそ？", "a": ["約3分の2"], "choices": ["約2分の1", "約3分の1", "約4分の3", "約3分の2"], "note": "森林の「木」の数で覚える。", "region": "全国", "badgeCat": "林業"},
   {"id": "forest-greendam", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "single", "q": "森林が水をたくわえ土砂崩れを防ぐことから呼ばれる名前は？", "a": ["緑のダム"], "choices": ["天然林", "原生林", "防砂林", "緑のダム"], "note": "漁師が植林することもある。", "region": "全国", "badgeCat": "林業"},
-  {"id": "forest-isan", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "multi", "q": "原生林が残り世界自然遺産に登録されている場所を ぜんぶ えらんでね", "a": ["白神山地", "屋久島"], "choices": ["白神山地", "屋久島", "尾瀬", "知床半島"], "note": "白神山地はぶな、屋久島は屋久杉。", "region": "全国", "badgeCat": "林業"},
+  {"id": "forest-isan", "comp": "産業編", "pref": "全国", "cat": "林業", "type": "multi", "q": "原生林が残り世界自然遺産に登録されている場所を 全部 選んでね", "a": ["白神山地", "屋久島"], "choices": ["白神山地", "屋久島", "尾瀬", "知床半島"], "note": "白神山地はぶな、屋久島は屋久杉。", "region": "全国", "badgeCat": "林業"},
   {"id": "fish-okiai", "comp": "産業編", "pref": "全国", "cat": "漁業", "type": "single", "q": "現在、日本で漁獲量が最も多い漁業は？", "a": ["沖合漁業"], "choices": ["遠洋漁業", "沿岸漁業", "養殖業", "沖合漁業"], "note": "数日～1週間ほど。", "region": "全国", "badgeCat": "漁業"},
   {"id": "fish-enyo", "comp": "産業編", "pref": "全国", "cat": "漁業", "type": "single", "q": "遠洋漁業が衰退した原因、各国が沿岸200海里に設定した水域は？", "a": ["排他的経済水域"], "choices": ["領海", "公海", "大陸棚", "排他的経済水域"], "note": "1973年の石油危機も原因。", "region": "全国", "badgeCat": "漁業"},
   {"id": "fish-yoshoku", "comp": "産業編", "pref": "全国", "cat": "漁業", "type": "single", "q": "稚魚から成魚になるまで育てて出荷する漁業は？", "a": ["養殖業"], "choices": ["沖合漁業", "遠洋漁業", "栽培漁業", "養殖業"], "note": "生産が増加している。", "region": "全国", "badgeCat": "漁業"},
@@ -748,7 +748,7 @@ function loadState(n,p){
   return null;
 }
 function rolloverDay(){
-  // 日付が変わっていたら「今日の学習」をリセット。前日にゴール未達ならストリークを途切れさせる簡易版
+  // 日付が変わっていたら「今日の学習」をリセット。前日に目標未達ならストリークを途切れさせる簡易版
   const t=todayStr();
   if(state.lastDay!==t){
     state.doneToday=0; state.streakedToday=false; state.lastDay=t;
@@ -772,7 +772,7 @@ function schedule(id,correct){
   }else{
     r.reps=Math.max(0,r.reps-1); // 1段階だけ戻す（完全リセットより優しい）
     r.interval=1; r.ef=Math.max(1.6,r.ef-0.2); r.mastered=false;
-    r.wrong=(r.wrong||0)+1; // にがて復習用：まちがえた回数を記録
+    r.wrong=(r.wrong||0)+1; // 苦手復習用：まちがえた回数を記録
   }
   r.due=Date.now()+r.interval*864e5;
   state.reviews[id]=r;
@@ -805,7 +805,7 @@ const BADGES = [
 ];
 const FINAL_BADGE = {key:"doctor", name:"地理博士", emoji:"🎓"};
 // 対象カードが1問もない称号（例：画像を追加する前の白地図）は「じゅんびちゅう」扱い。
-// 解放判定・地理博士の条件・称号数の分母すべてから除外し、カードが入ると自動で有効になる
+// 解放判定・地理博士の条件・称号数の分母全てから除外し、カードが入ると自動で有効になる
 function badgeActive(b){return CARDS.some(c=> b.type==="region" ? c.region===b.match : c.badgeCat===b.match);}
 function activeBadges(){return BADGES.filter(badgeActive);}
 
@@ -852,10 +852,10 @@ function nextCelebration(){
   ov.innerHTML=`<div class="conf">${conf}</div>
     <div class="cbody">
       <div class="cemoji">${b.emoji}</div>
-      <div class="ctitle">${isDoctor?"さいごの称号":"あたらしい称号"}</div>
+      <div class="ctitle">${isDoctor?"最後の称号":"新しい称号"}</div>
       <div class="cname">${b.name}</div>
-      <div class="cget">${isDoctor?"ぜんぶの称号を あつめたよ！すごい！！":"ゲット！"}</div>
-      <div class="chint">タップでとじる</div>
+      <div class="cget">${isDoctor?"全部の称号を 集めたよ！すごい！！":"ゲット！"}</div>
+      <div class="chint">タップで閉じる</div>
     </div>`;
   document.body.appendChild(ov);
   const close=()=>{ if(!ov.parentNode)return; ov.classList.add('out'); setTimeout(()=>{ov.remove();nextCelebration();},260); };
@@ -871,23 +871,23 @@ $('loginBtn').onclick=async()=>{
   const n=$('nick').value.trim(), p=$('pin').value.trim(), campus=$('campusSel').value;
   $('loginMsg').textContent="";
   if(n.length<1){$('loginMsg').textContent="ニックネームを入れてね";return;}
-  if(!/^\d{4,8}$/.test(p)){$('loginMsg').textContent="番号は数字（4〜8けた）で入れてね";return;}
+  if(!/^\d{4,8}$/.test(p)){$('loginMsg').textContent="番号は数字（4〜8桁）で入れてね";return;}
   $('loginBtn').disabled=true;
   try{
     let onlineOk=false, srvCampus="", srvWeek=0;
     if(ONLINE()){
-      $('loginMsg').textContent="つうしん中…";
+      $('loginMsg').textContent="通信中…";
       try{
         let r=await rpc('login_player',{p_nick:n,p_number:p});
         if(!r.ok&&r.reason==='not_found'){
-          if(!campus){$('loginMsg').textContent="はじめての人は校舎をえらんでね";return;}
+          if(!campus){$('loginMsg').textContent="初めての人は校舎を選んでね";return;}
           r=await rpc('register_player',{p_nick:n,p_number:p,p_campus:campus});
           if(!r.ok){$('loginMsg').textContent=REG_ERR[r.reason]||"登録できませんでした";return;}
           r.week_score=0;
         }else if(!r.ok&&r.reason==='suspended'){
-          $('loginMsg').textContent="このアカウントは いま とまっているよ。先生にきいてね";return;
+          $('loginMsg').textContent="このアカウントは 今 止まっているよ。先生に聞いてね";return;
         }else if(!r.ok){
-          $('loginMsg').textContent="番号がちがうみたい。もういちど確かめてね";return;
+          $('loginMsg').textContent="番号が違うみたい。もう一度確かめてね";return;
         }
         onlineOk=true; srvCampus=r.campus||campus; srvWeek=r.week_score||0;
       }catch(e){ /* サーバに届かない → オフラインで続行 */ }
@@ -941,18 +941,18 @@ function renderHome(){
     if(total===0)return;
     html+=`<button class="deck" data-comp="${c}"><span class="dot" style="background:${COLOR[c]}"></span>
       <span><span class="dn">${c}</span><br><span class="dd">${desc[c]}・全${total}枚</span></span>
-      <span class="due ${due?'':'zero'}">${due?('学習 '+due+'枚'):'おわり'}</span></button>`;
+      <span class="due ${due?'':'zero'}">${due?('学習 '+due+'枚'):'終わり'}</span></button>`;
   });
   html+=`<button class="deck" data-comp="ALL"><span class="dot" style="background:linear-gradient(135deg,var(--green),var(--blue),var(--orange))"></span>
-    <span><span class="dn">きょうのおすすめ</span><br><span class="dd">復習どきのカードをまぜて出題</span></span>
+    <span><span class="dn">今日のおすすめ</span><br><span class="dd">復習どきのカードを混ぜて出題</span></span>
     <span class="due">スタート</span></button>`;
   html+=`<button class="deck" data-comp="PICK"><span class="dot" style="background:var(--gold)"></span>
-    <span><span class="dn">🎯 えらんで学習</span><br><span class="dd">地方・分野ごとに出題（称号ねらい）</span></span>
-    <span class="due">えらぶ</span></button>`;
+    <span><span class="dn">🎯 選んで学習</span><br><span class="dd">地方・分野ごとに出題（称号狙い）</span></span>
+    <span class="due">選ぶ</span></button>`;
   const ng=nigateCards().length;
   if(ng>0){ // まちがえた問題ができたときだけ出現する
     html+=`<button class="deck" data-comp="NIGATE"><span class="dot" style="background:var(--wrong)"></span>
-      <span><span class="dn">🔥 にがて復習</span><br><span class="dd">まちがえた回数が多い問題から出すよ</span></span>
+      <span><span class="dn">🔥 苦手復習</span><br><span class="dd">間違えた回数が多い問題から出すよ</span></span>
       <span class="due">${Math.min(ng,DAILY_GOAL)}枚</span></button>`;
   }
   $('deckPick').innerHTML=html;
@@ -969,14 +969,14 @@ function renderHome(){
 function renderBadges(){
   refreshBadges(); saveState();
   const got=earnedBadgeCount();
-  $('badgeSum').innerHTML=`あつめた称号 <b>${got}</b> / ${activeBadges().length}　${state.badges[FINAL_BADGE.key]?'<span style="color:var(--gold);font-weight:700">🎓 地理博士 達成！</span>':'（ぜんぶ集めると「地理博士」）'}`;
+  $('badgeSum').innerHTML=`集めた称号 <b>${got}</b> / ${activeBadges().length}　${state.badges[FINAL_BADGE.key]?'<span style="color:var(--gold);font-weight:700">🎓 地理博士 達成！</span>':'（全部集めると「地理博士」）'}`;
   let html="";
   BADGES.forEach(b=>{
     if(!badgeActive(b)){ // 対象カードがまだ無い称号（白地図など）は「じゅんびちゅう」の箱として見せる
       html+=`<div class="badge locked" style="filter:grayscale(.6)">
         <div class="bemoji">${b.emoji}</div>
         <div class="bname">${b.name}</div>
-        <div class="bmeta">じゅんびちゅう・おたのしみに！</div>
+        <div class="bmeta">準備中・お楽しみに！</div>
       </div>`;
       return;
     }
@@ -997,14 +997,14 @@ function renderBadges(){
   html+=`<div class="badge final ${fEarned?'earned':'locked'}">
     <div class="bemoji">${FINAL_BADGE.emoji}</div>
     <div class="bname">${FINAL_BADGE.name}</div>
-    <div class="bmeta">${fEarned?('ゲット！ '+state.badges[FINAL_BADGE.key]):activeBadges().length+'称号すべてでゲット'}</div>
+    <div class="bmeta">${fEarned?('ゲット！ '+state.badges[FINAL_BADGE.key]):activeBadges().length+'称号全てでゲット'}</div>
   </div>`;
   $('badgeGrid').innerHTML=html;
 }
 $('badgesBtn').onclick=()=>{renderBadges();show('badges');};
 $('badgesBack').onclick=()=>{renderHome();show('home');};
 
-/* ===== えらんで学習（称号と同じ 地方×分野 の軸でデッキを選ぶ） ===== */
+/* ===== 選んで学習（称号と同じ 地方×分野 の軸でデッキを選ぶ） ===== */
 function renderPick(){
   const mk=(b,comp)=>{
     const p=badgeProgress(b);
@@ -1058,7 +1058,7 @@ function startQuiz(comp){
   session={queue:pool,idx:0,correct:0,total:pool.length,comp};
   renderQuestion(); show('quiz');
 }
-const STAGE_LABEL=["ステップ1・4たくからえらぶ","ステップ2・文字をならべる","ステップ3・漢字で入力"];
+const STAGE_LABEL=["ステップ1・4択から選ぶ","ステップ2・文字を並べる","ステップ3・漢字で入力"];
 
 function renderQuestion(){
   const c=session.queue[session.idx];
@@ -1067,7 +1067,7 @@ function renderQuestion(){
   stage = (c.type==="multi"||c.image) ? 0 : stageOf(state.reviews[c.id]);
   $('qProg').style.width=(session.idx/session.total*100)+"%";
   $('qCount').textContent=(session.idx+1)+"/"+session.total;
-  $('stagePill').textContent = c.type==="multi" ? "ふくすう選ぶ問題" : (c.image ? "画像を見てえらぶ問題" : STAGE_LABEL[stage]);
+  $('stagePill').textContent = c.type==="multi" ? "複数選ぶ問題" : (c.image ? "画像を見て選ぶ問題" : STAGE_LABEL[stage]);
   $('qTag').textContent=c.comp; $('qTag').style.background=COLOR[c.comp];
   $('qPref').textContent=c.pref; $('qText').textContent=c.q;
   const im=$('qImg'); $('qImgMiss').style.display="none";
@@ -1078,7 +1078,7 @@ function renderQuestion(){
   }else{ im.style.display="none"; im.removeAttribute('src'); }
   $('qMultiHint').style.display=c.type==="multi"?"block":"none";
   $('feedback').className="feedback";
-  $('checkBtn').textContent="こたえあわせ"; $('checkBtn').disabled=true; $('checkBtn').onclick=checkAnswer;
+  $('checkBtn').textContent="答え合わせ"; $('checkBtn').disabled=true; $('checkBtn').onclick=checkAnswer;
   $('dontknow').style.display="block";
 
   if(stage===0) renderChoices(c);
@@ -1147,7 +1147,7 @@ function renderSlots(n){
 
 /* ステージ3：漢字入力 */
 function renderInput(c){
-  $('answerArea').innerHTML=`<input class="text-input" id="txtIn" inputmode="text" autocomplete="off" placeholder="こたえを入力">
+  $('answerArea').innerHTML=`<input class="text-input" id="txtIn" inputmode="text" autocomplete="off" placeholder="答えを入力">
     <div class="input-help">漢字で入力してね（「市・県・府」は省いてもOK）</div>`;
   const inp=$('txtIn');
   inp.oninput=()=>{$('checkBtn').disabled=inp.value.trim().length===0;};
@@ -1197,9 +1197,9 @@ function judge(correct){
   refreshBadges(); // 答え合わせ直後に称号判定→新規獲得ならお祝い演出
   saveState();
   const fb=$('feedback');fb.classList.add('show',correct?'good':'bad');
-  $('fTitle').innerHTML=correct?"せいかい！ <span class='xp-pop'>+10 XP</span>":"おしい！もういちど覚えよう";
-  $('fNote').innerHTML=(correct?"":("こたえ：<b>"+c.a.join("・")+"</b><br>"))+c.note;
-  $('checkBtn').textContent=session.idx+1<session.total?"つぎへ":"けっか をみる";
+  $('fTitle').innerHTML=correct?"正解！ <span class='xp-pop'>+10 XP</span>":"惜しい！もう一度覚えよう";
+  $('fNote').innerHTML=(correct?"":("答え：<b>"+c.a.join("・")+"</b><br>"))+c.note;
+  $('checkBtn').textContent=session.idx+1<session.total?"次へ":"結果を見る";
   $('checkBtn').disabled=false;
 }
 
@@ -1214,7 +1214,7 @@ function finishSession(){
   $('dCards').textContent=session.total;
   $('dCorrect').textContent=session.correct;
   $('dXp').textContent="+"+(session.correct*10);
-  $('dStreakMsg').textContent=up?`🔥 れんぞく ${state.streak}日 になったよ！`:`きょうの学習 ${state.doneToday}問 ・ ゴールまであと ${Math.max(0,DAILY_GOAL-state.doneToday)}問`;
+  $('dStreakMsg').textContent=up?`🔥 連続 ${state.streak}日 になったよ！`:`今日の学習 ${state.doneToday}問 ・ 目標まであと ${Math.max(0,DAILY_GOAL-state.doneToday)}問`;
   show('done');
 }
 $('backHome').onclick=()=>{renderHome();show('home');};
@@ -1224,7 +1224,7 @@ $('againBtn').onclick=()=>{startQuiz(session.comp);};
 $('importBtn').onclick=()=>{$('impMsg').innerHTML="";$('csvText').value="";show('import');};
 $('impBack').onclick=()=>{renderHome();show('home');};
 $('csvFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('csvText').value=r.result;};r.readAsText(f,'utf-8');};
-$('resetCards').onclick=()=>{localStorage.removeItem(LS_CARDS);CARDS=enrichCards(DEFAULT_CARDS.slice());$('impMsg').innerHTML='<span class="ok-msg">サンプル問題にもどしました</span>';};
+$('resetCards').onclick=()=>{localStorage.removeItem(LS_CARDS);CARDS=enrichCards(DEFAULT_CARDS.slice());$('impMsg').innerHTML='<span class="ok-msg">サンプル問題に戻しました</span>';};
 
 $('doImport').onclick=()=>{
   const txt=$('csvText').value.trim();
@@ -1233,7 +1233,7 @@ $('doImport').onclick=()=>{
     const cards=parseCSV(txt);
     if(cards.length===0){$('impMsg').innerHTML='<span class="err-msg">問題が読み取れませんでした。見出し行と列を確認してください。</span>';return;}
     CARDS=cards; localStorage.setItem(LS_CARDS,JSON.stringify(cards));
-    $('impMsg').innerHTML='<span class="ok-msg">'+cards.length+'問を取り込みました！ホームへもどってください。</span>';
+    $('impMsg').innerHTML='<span class="ok-msg">'+cards.length+'問を取り込みました！ホームへ戻ってください。</span>';
   }catch(err){$('impMsg').innerHTML='<span class="err-msg">読み込みエラー：'+err.message+'</span>';}
 };
 
@@ -1302,9 +1302,9 @@ async function rpc(fn,args){
 }
 const REG_ERR={
   bad_nick:"ニックネームは1〜12文字で入れてね",
-  bad_campus:"校舎をえらんでね",
+  bad_campus:"校舎を選んでね",
   bad_number:"その番号は使えないみたい。先生にもらった番号を確かめてね",
-  nick_taken:"そのニックネームはもう使われているよ。べつの名前にしてね"
+  nick_taken:"そのニックネームはもう使われているよ。別の名前にしてね"
 };
 
 /* 週間スコア送信：正解のたびに weekPending にためて、まとめて送る（オフラインでも消えない） */
@@ -1357,17 +1357,17 @@ function renderRankTabs(){
 }
 async function loadRanking(){
   const isMonth=rankPeriod==='month';
-  $('rankNote').innerHTML=(isMonth?'今月の せいかい数 で しょうぶ！':'今週の せいかい数 で しょうぶ！')
+  $('rankNote').innerHTML=(isMonth?'今月の 正解数 で 勝負！':'今週の 正解数 で 勝負！')
     +'<span id="rankReset"></span>';
-  if(!isMonth)$('rankReset').textContent=" つぎのリセットまで あと"+daysToReset()+"日";
-  $('rankList').innerHTML='<div class="hint" style="text-align:center;padding:24px">よみこみ中…</div>';
+  if(!isMonth)$('rankReset').textContent=" 次のリセットまで あと"+daysToReset()+"日";
+  $('rankList').innerHTML='<div class="hint" style="text-align:center;padding:24px">読み込み中…</div>';
   await flushScore();
   $('myWeekScore').textContent=(state.weekScore||0)+(state.weekPending||0);
   try{
     const rows=await rpc('get_ranking',{p_campus:rankCampus||null,p_period:rankPeriod});
     if(!rows.length){
       $('rankList').innerHTML='<div class="hint" style="text-align:center;padding:24px">'
-        +(isMonth?'今月はまだだれも記録がないよ。':'今週はまだだれも記録がないよ。')+'<br>1番のりのチャンス！</div>';
+        +(isMonth?'今月はまだ誰も記録がないよ。':'今週はまだ誰も記録がないよ。')+'<br>1番乗りのチャンス！</div>';
       return;
     }
     const medal=["🥇","🥈","🥉"];
@@ -1376,11 +1376,11 @@ async function loadRanking(){
       const st=starHtml(r.monthly_wins||0,r.weekly_wins||0);
       return `<div class="rank-row${me?' me':''}">
         <span class="rno">${r.rank<=3?medal[r.rank-1]:r.rank+'位'}</span>
-        <span class="rnick">${esc(r.nick)}${st?' '+st:''}${me?' <span class="me-tag">きみ</span>':''}<br><span class="rcampus">${esc(r.campus)}</span></span>
+        <span class="rnick">${esc(r.nick)}${st?' '+st:''}${me?' <span class="me-tag">君</span>':''}<br><span class="rcampus">${esc(r.campus)}</span></span>
         <span class="rscore">${r.correct_count}問</span></div>`;
     }).join("");
   }catch(e){
-    $('rankList').innerHTML='<div class="hint" style="text-align:center;padding:24px">つうしんエラー。<br>しばらくしてから「さいしんにする」を押してね</div>';
+    $('rankList').innerHTML='<div class="hint" style="text-align:center;padding:24px">通信エラー。<br>しばらくしてから「最新にする」を押してね</div>';
   }
 }
 </script>
