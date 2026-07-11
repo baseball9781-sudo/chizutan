@@ -7,7 +7,7 @@
   Supabase設定：<script>内の SUPABASE_URL / SUPABASE_ANON_KEY を埋める（空なら従来どおり端末内のみで動く）。
 -->
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ちずたん｜都道府県編</title>
 <style>
   :root{
@@ -754,10 +754,17 @@ function loadState(n,p){
   try{const j=localStorage.getItem(userKey(n,p)); if(j)return JSON.parse(j);}catch(e){}
   return null;
 }
+function dayGap(a,b){
+  // "YYYY-M-D"文字列の日数差。Safariは"2026-7-11"をDate()で解釈できないため手動パース
+  const p=s=>{const[y,m,d]=String(s).split("-").map(Number);return new Date(y,(m||1)-1,d||1);};
+  return Math.round((p(b)-p(a))/864e5);
+}
 function rolloverDay(){
-  // 日付が変わっていたら「今日の学習」をリセット。前日に目標未達ならストリークを途切れさせる簡易版
+  // 日付が変わっていたら「今日の学習」をリセット。
+  // 前回の記録日に30問未完了、または丸1日以上あいていたら連続記録を0に戻す
   const t=todayStr();
   if(state.lastDay!==t){
+    if(dayGap(state.lastDay,t)>=2 || !state.streakedToday) state.streak=0;
     state.doneToday=0; state.streakedToday=false; state.lastDay=t;
   }
 }
@@ -913,7 +920,7 @@ $('loginBtn').onclick=async()=>{
           const pr=await rpc('load_progress',{p_nick:n,p_number:p});
           if(pr.ok&&pr.data){
             const d=pr.data;
-            ["xp","streak","reviews","doneToday","accCorrect","accTotal","lastDay","streakedToday","badges"].forEach(k=>{
+            ["xp","streak","reviews","doneToday","accCorrect","accTotal","lastDay","streakedToday","badges","review","daily30Date","weekPending"].forEach(k=>{
               if(d[k]!=null)state[k]=d[k];
             });
           }
@@ -1106,12 +1113,17 @@ function renderQuestion(){
 }
 
 function renderChoices(c){
+  // 取り込みCSV由来のテキストをHTMLとして解釈しないよう、DOM APIで組み立てる（XSS対策）
   const ch=shuffle(c.choices);
-  let html='<div class="choices">';
-  ch.forEach(o=>{const mk=c.type==="multi"?"☐":"";html+=`<button class="choice" data-opt="${o}"><span class="mk">${mk}</span><span>${o}</span></button>`;});
-  html+='</div>';
-  $('answerArea').innerHTML=html;
-  $('answerArea').querySelectorAll('.choice').forEach(b=>b.onclick=()=>onPick(b,c.type));
+  const wrap=document.createElement('div');wrap.className='choices';
+  ch.forEach(o=>{
+    const b=document.createElement('button');b.className='choice';b.dataset.opt=o;
+    const mk=document.createElement('span');mk.className='mk';mk.textContent=c.type==="multi"?"☐":"";
+    const tx=document.createElement('span');tx.textContent=o;
+    b.append(mk,tx);b.onclick=()=>onPick(b,c.type);
+    wrap.appendChild(b);
+  });
+  const host=$('answerArea');host.innerHTML="";host.appendChild(wrap);
 }
 function onPick(btn,type){
   if(answered)return;const opt=btn.dataset.opt;
@@ -1230,7 +1242,14 @@ function judge(correct){
   saveState();
   const fb=$('feedback');fb.classList.add('show',correct?'good':'bad');
   $('fTitle').innerHTML=correct?"正解！ <span class='xp-pop'>+10 XP</span>":"惜しい！もう一度覚えよう";
-  $('fNote').innerHTML=(correct?"":("答え：<b>"+c.a.join("・")+"</b><br>"))+c.note;
+  // 答え・覚え方メモはCSV由来テキストなのでDOM APIで挿入（XSS対策）
+  const fn=$('fNote');fn.innerHTML="";
+  if(!correct){
+    fn.append("答え：");
+    const b=document.createElement('b');b.textContent=c.a.join("・");
+    fn.append(b,document.createElement('br'));
+  }
+  fn.append(c.note||"");
   $('checkBtn').textContent=session.idx+1<session.total?"次へ":"結果を見る";
   $('checkBtn').disabled=false;
 }
@@ -1272,7 +1291,11 @@ $('doImport').onclick=()=>{
     if(cards.length===0){$('impMsg').innerHTML='<span class="err-msg">問題が読み取れませんでした。見出し行と列を確認してください。</span>';return;}
     CARDS=cards; localStorage.setItem(LS_CARDS,JSON.stringify(cards));
     $('impMsg').innerHTML='<span class="ok-msg">'+cards.length+'問を取り込みました！ホームへ戻ってください。</span>';
-  }catch(err){$('impMsg').innerHTML='<span class="err-msg">読み込みエラー：'+err.message+'</span>';}
+  }catch(err){
+    // 例外メッセージにCSV断片が混ざることがあるためテキストとして表示（XSS対策）
+    const s=document.createElement('span');s.className='err-msg';s.textContent='読み込みエラー：'+err.message;
+    const m=$('impMsg');m.innerHTML="";m.appendChild(s);
+  }
 };
 
 /* シンプルCSVパーサ（カンマ区切り・"で囲まれたフィールド対応） */
@@ -1361,9 +1384,10 @@ async function flushScore(){
 /* 進捗バックアップ：番号(pin)は送るデータに含めない */
 async function syncProgress(){
   if(!state||!state.online||!ONLINE())return;
-  const d={xp:state.xp,streak:state.streak,reviews:state.reviews,doneToday:state.doneToday,
+  const d={sv:2,xp:state.xp,streak:state.streak,reviews:state.reviews,doneToday:state.doneToday,
     accCorrect:state.accCorrect,accTotal:state.accTotal,lastDay:state.lastDay,
-    streakedToday:state.streakedToday,badges:state.badges,campus:state.campus};
+    streakedToday:state.streakedToday,badges:state.badges,campus:state.campus,
+    review:state.review,daily30Date:state.daily30Date,weekPending:state.weekPending};
   try{await rpc('save_progress',{p_nick:state.nick,p_number:state.pin,p_data:d});}catch(e){}
 }
 
