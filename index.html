@@ -1376,7 +1376,10 @@ async function flushScore(){
     try{
       const r=await rpc('add_points',{p_nick:state.nick,p_number:state.pin,p_points:send});
       if(!r.ok)break;
-      state.weekPending-=send; state.weekScore=r.week_score; saveState();
+      // サーバが実際に加算できた分（granted）だけ減らす。日次上限で一部切り捨てられた分は消さずに翌日送る
+      const granted=(r.granted!=null)?r.granted:send; // granted未対応の旧サーバとの互換
+      state.weekPending-=granted; state.weekScore=r.week_score; saveState();
+      if(granted<send)break; // 日次上限に到達→残りは明日
     }catch(e){break;}
   }
 }
